@@ -1,6 +1,6 @@
 import onChange from 'on-change';
 
-export default (elements, state) => {
+export default (elements, i18n, state) => {
   const { input, errorField } = elements;
   const watchedState = onChange(state, (path, value) => {
     if (path === 'form.valid') {
@@ -17,7 +17,7 @@ export default (elements, state) => {
       }
     }
     if (path === 'form.message') {
-      errorField.textContent = value;
+      errorField.textContent = i18n.t(`message.validation.${state.form.message}`);
     }
   });
 

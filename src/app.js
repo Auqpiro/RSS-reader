@@ -1,4 +1,6 @@
 import * as yup from 'yup';
+import i18next from 'i18next';
+import resources from './locales/index.js';
 import watch from './view.js';
 
 export default async () => {
@@ -16,28 +18,43 @@ export default async () => {
     rssList: [],
   };
 
-  const watchedState = watch(elements, state);
+  yup.setLocale({
+    mixed: {
+      required: () => ({ key: 'required' }),
+      notOneOf: () => ({ key: 'notOneOf' }),
+    },
+    string: {
+      url: () => ({ key: 'validUrl' }),
+    },
+  });
+
+  const defaultLang = 'ru';
+
+  const i18n = i18next.createInstance();
+  i18n.init({
+    lng: defaultLang,
+    debug: false,
+    resources,
+  });
+
+  const watchedState = watch(elements, i18n, state);
 
   elements.form.addEventListener('submit', (event) => {
     event.preventDefault();
     const formData = new FormData(event.target);
     const newUrl = Object.fromEntries(formData);
     yup.object({
-      url: yup
-        .string()
-        .trim()
-        .required('Не должно быть пустым')
-        .url('Ссылка должна быть валидным URL')
-        .notOneOf(state.rssList, 'RSS уже существует'),
+      url: yup.string().trim().required().url()
+        .notOneOf(state.rssList),
     }).validate(newUrl)
       .then(({ url: rssUrl }) => {
         watchedState.form.valid = true;
         watchedState.rssList.push(rssUrl);
-        watchedState.form.message = 'RSS успешно загружен';
+        watchedState.form.message = 'done';
       })
       .catch((err) => {
         watchedState.form.valid = false;
-        watchedState.form.message = err.message;
+        watchedState.form.message = err.message.key;
       });
   });
 };
