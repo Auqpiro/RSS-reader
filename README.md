@@ -10,7 +10,7 @@ This is my studying project at Hexlet School.
 
 **RSS Aggregator** is a simple, easy-to-use, minimalist web application that puts all your RSS feeds in one place.
 
-View demo: [frontend-project-11-sandy.vercel.app](https://frontend-project-11-auqpiro.vercel.app/)
+View demo: [RSS app](https://frontend-project-11-git-main-auqpiro.vercel.app/)
 
 ## Features
 
