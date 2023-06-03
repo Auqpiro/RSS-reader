@@ -91,31 +91,24 @@ export default async () => {
                 reject();
               });
             }
-            const feedTitle = data.querySelector('channel > title').textContent;
-            const feedDescription = data.querySelector('channel > description').textContent;
-            const feedLink = feedURL;
-            const id = uniqID();
-            const postsList = data.querySelectorAll('channel > item');
+            const feed = {
+              title: data.querySelector('channel > title').textContent,
+              description: data.querySelector('channel > description').textContent,
+              link: feedURL,
+              id: uniqID(),
+            };
             const posts = [];
+            const postsList = data.querySelectorAll('channel > item');
             postsList.forEach((item) => {
-              const postTitle = item.querySelector('title').textContent;
-              const postDescription = item.querySelector('description').textContent;
-              const postLink = item.querySelector('link').textContent;
-              const postID = uniqID();
               posts.push({
-                title: postTitle,
-                description: postDescription,
-                link: postLink,
-                feedID: id,
-                id: postID,
+                title: item.querySelector('title').textContent,
+                description: item.querySelector('description').textContent,
+                link: item.querySelector('link').textContent,
+                feedID: feed.id,
+                id: uniqID(),
               });
             });
-            return [{
-              title: feedTitle,
-              description: feedDescription,
-              link: feedLink,
-              id,
-            }, posts];
+            return [feed, posts];
           },
         ],
       }))
