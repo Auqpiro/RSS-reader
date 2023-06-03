@@ -28,7 +28,7 @@ const renderPosts = (posts) => {
   postList.classList.add('list-group', 'border-0', 'rounded-0');
   posts.forEach(({ title, link, id }) => {
     const itemContainer = renderPost(title, link, id);
-    postList.append(itemContainer);
+    postList.prepend(itemContainer);
   });
   divContainer.append(postList);
   return divContainer;
@@ -80,10 +80,6 @@ export default (elements, i18n, state) => {
     switch (path) {
       case 'form.valid':
         input.classList.toggle('is-invalid', !value);
-        if (value) {
-          form.reset();
-          input.focus();
-        }
         break;
       case 'status.resolve':
         messageField.classList.toggle('text-success', value);
@@ -93,6 +89,8 @@ export default (elements, i18n, state) => {
         messageField.textContent = i18n.t(`message.${value}`);
         break;
       case 'content.feeds':
+        form.reset();
+        input.focus();
         feedsContainer.replaceChildren(renderFeeds(value));
         break;
       case 'content.posts':
