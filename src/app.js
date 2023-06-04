@@ -1,6 +1,7 @@
 import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
+import * as bootstrap from 'bootstrap';
 import resources from './locales/index.js';
 import watch from './view.js';
 
@@ -61,7 +62,10 @@ export default async () => {
     messageField: document.querySelector('p.feedback'),
     feedsContainer: document.querySelector('div.feeds'),
     postContainer: document.querySelector('div.posts'),
+    modal: document.getElementById('modal'),
   };
+
+  const myModal = new bootstrap.Modal(elements.modal);
 
   const state = {
     form: {
@@ -75,6 +79,10 @@ export default async () => {
     content: {
       feeds: [],
       posts: [],
+      touched: new Set(),
+    },
+    modal: {
+      touchedID: null,
     },
   };
 
@@ -131,8 +139,6 @@ export default async () => {
             const loadedPosts = data.querySelectorAll('channel > item');
             return checkUniqPosts(id, loadedPosts, oldPosts);
           });
-          watchedState.status.resolve = true;
-          watchedState.status.message = 'done';
           watchedState.content.posts.push(...newPosts);
         })
         .catch(() => {
@@ -143,13 +149,26 @@ export default async () => {
           refreshingTimeoutID = checkFeeds(currentState);
         });
     }, 5000);
+
+    const postsButtons = document.querySelectorAll('[data-toggle="modal"]');
+    postsButtons.forEach((postButton) => postButton.addEventListener('click', ({ target }) => {
+      const touchedPostID = Number(target.previousSibling.dataset.id);
+      watchedState.content.touched.add(touchedPostID);
+      watchedState.modal.touchedID = touchedPostID;
+      myModal.show();
+    }));
+
+    const postsLinks = document.querySelectorAll('a');
+    postsLinks.forEach((postLink) => postLink.addEventListener('click', ({ target }) => {
+      const touchedPostID = Number(target.dataset.id);
+      watchedState.content.touched.add(touchedPostID);
+    }));
+
     return timeoutID;
   };
 
   elements.form.addEventListener('submit', (event) => {
     event.preventDefault();
-    clearTimeout(refreshingTimeoutID);
-
     const formData = new FormData(event.target);
     const newUrl = Object.fromEntries(formData);
 
@@ -161,8 +180,6 @@ export default async () => {
     }).validate(newUrl)
       .then(({ url }) => {
         watchedState.form.valid = true;
-        watchedState.status.resolve = true;
-        watchedState.status.message = 'loading';
         return url;
       })
       .then((url) => axInstance({
@@ -174,24 +191,23 @@ export default async () => {
         .catch(() => Promise.reject(new Error('network'))))
       .then(({ data }) => parseDocument(newUrl.url, data))
       .then((data) => {
-        const [feed, posts] = data;
-        watchedState.form.valid = true;
+        clearTimeout(refreshingTimeoutID);
+        watchedState.form.links.push(newUrl.url);
         watchedState.status.resolve = true;
         watchedState.status.message = 'done';
+        const [feed, posts] = data;
         watchedState.content.feeds.push(feed);
         watchedState.content.posts.push(...posts);
-        state.form.links.push(newUrl.url);
+        refreshingTimeoutID = checkFeeds(state);
       })
       .catch((err) => {
-        watchedState.status.resolve = false;
         watchedState.form.valid = false;
+        watchedState.status.resolve = false;
         if (err.message.key) {
           watchedState.status.message = err.message.key;
         } else {
           watchedState.status.message = err.message;
         }
       });
-
-    refreshingTimeoutID = checkFeeds(state);
   });
 };

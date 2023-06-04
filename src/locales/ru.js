@@ -6,8 +6,12 @@ export default {
       validRSS: 'Ресурс не содержит валидный RSS',
       notOneOf: 'RSS уже существует',
       done: 'RSS успешно загружен',
-      loading: 'Просмотр',
       network: 'Ошибка сети',
+    },
+    interface: {
+      feeds: 'Фиды',
+      posts: 'Посты',
+      button: 'Просмотр',
     },
   },
 };
