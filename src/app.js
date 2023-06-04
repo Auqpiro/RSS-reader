@@ -140,8 +140,7 @@ export default async () => {
             return checkUniqPosts(id, loadedPosts, oldPosts);
           });
           watchedState.content.posts.push(...newPosts);
-        })
-        .catch(() => {
+        }).catch(() => {
           watchedState.status.resolve = false;
           watchedState.status.message = 'network';
         })

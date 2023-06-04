@@ -47,10 +47,7 @@ export default (elements, i18n, state) => {
     divContainer.append(divHeader);
     const postList = document.createElement('ul');
     postList.classList.add('list-group', 'border-0', 'rounded-0');
-    posts.forEach((post) => {
-      const itemContainer = renderPost(post, state, i18n);
-      postList.prepend(itemContainer);
-    });
+    posts.forEach((post) => postList.prepend(renderPost(post, state, i18n)));
     divContainer.append(postList);
     postContainer.replaceChildren(divContainer);
   };
@@ -81,10 +78,7 @@ export default (elements, i18n, state) => {
     divContainer.append(divHeader);
     const feedList = document.createElement('ul');
     feedList.classList.add('list-group', 'border-0', 'rounded-0');
-    feeds.forEach((feed) => {
-      const itemContainer = renderFeed(feed);
-      feedList.append(itemContainer);
-    });
+    feeds.forEach((feed) => feedList.append(renderFeed(feed)));
     divContainer.append(feedList);
     feedsContainer.replaceChildren(divContainer);
   };
