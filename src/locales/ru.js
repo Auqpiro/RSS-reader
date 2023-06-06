@@ -5,8 +5,8 @@ export default {
       validUrl: 'Ссылка должна быть валидным URL',
       validRSS: 'Ресурс не содержит валидный RSS',
       notOneOf: 'RSS уже существует',
-      done: 'RSS успешно загружен',
       network: 'Ошибка сети',
+      done: 'RSS успешно загружен',
     },
     interface: {
       feeds: 'Фиды',

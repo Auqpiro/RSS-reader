@@ -5,6 +5,7 @@ export default (elements, i18n, state) => {
     form,
     input,
     messageField,
+    submit,
     feedsContainer,
     postContainer,
     modal,
@@ -30,12 +31,13 @@ export default (elements, i18n, state) => {
     postButton.classList.add('btn', 'btn-outline-primary', 'btn-sm');
     postButton.dataset.toggle = 'modal';
     postButton.dataset.target = '#modal';
+    postButton.dataset.id = id;
     postButton.textContent = i18n.t('interface.button');
     itemContainer.append(postLink, postButton);
     return itemContainer;
   };
 
-  const renderPosts = (posts) => {
+  const renderPosts = (posts, container) => {
     const divContainer = document.createElement('div');
     divContainer.classList.add('card', 'border-0');
     const divHeader = document.createElement('div');
@@ -49,7 +51,7 @@ export default (elements, i18n, state) => {
     postList.classList.add('list-group', 'border-0', 'rounded-0');
     posts.forEach((post) => postList.prepend(renderPost(post, state, i18n)));
     divContainer.append(postList);
-    postContainer.replaceChildren(divContainer);
+    container.replaceChildren(divContainer);
   };
 
   const renderFeed = (feed) => {
@@ -66,7 +68,7 @@ export default (elements, i18n, state) => {
     return itemContainer;
   };
 
-  const renderFeeds = (feeds) => {
+  const renderFeeds = (feeds, container) => {
     const divContainer = document.createElement('div');
     divContainer.classList.add('card', 'border-0');
     const divHeader = document.createElement('div');
@@ -80,19 +82,38 @@ export default (elements, i18n, state) => {
     feedList.classList.add('list-group', 'border-0', 'rounded-0');
     feeds.forEach((feed) => feedList.append(renderFeed(feed)));
     divContainer.append(feedList);
-    feedsContainer.replaceChildren(divContainer);
+    container.replaceChildren(divContainer);
   };
 
-  const renderModal = (selectedPostID) => {
-    const { posts } = state.content;
-    const [{ title, description, link }] = posts
-      .filter(({ id }) => id === selectedPostID);
-    const modalTitle = modal.querySelector('h5');
+  const renderModal = (post, container) => {
+    const [{ title, description, link }] = post;
+    const modalTitle = container.querySelector('h5');
     modalTitle.textContent = title;
-    const modalDescription = modal.querySelector('.modal-body');
+    const modalDescription = container.querySelector('.modal-body');
     modalDescription.textContent = description;
-    const modalLink = modal.querySelector('a');
+    const modalLink = container.querySelector('a');
     modalLink.href = link;
+  };
+
+  const handleFormStatus = (value) => {
+    switch (value) {
+      case 'idle':
+        messageField.textContent = '';
+        break;
+      case 'loading':
+        submit.disabled = true;
+        break;
+      case 'done':
+        form.reset();
+        input.focus();
+        submit.disabled = false;
+        break;
+      case 'error':
+        submit.disabled = false;
+        break;
+      default:
+        break;
+    }
   };
 
   const watchedState = onChange(state, (path, value) => {
@@ -100,28 +121,27 @@ export default (elements, i18n, state) => {
       case 'form.valid':
         input.classList.toggle('is-invalid', !value);
         break;
-      case 'form.links':
-        form.reset();
-        input.focus();
+      case 'form.status':
+        handleFormStatus(value);
         break;
-      case 'status.resolve':
-        messageField.classList.toggle('text-success', value);
-        messageField.classList.toggle('text-danger', !value);
+      case 'feedback.isError':
+        messageField.classList.toggle('text-success', !value);
+        messageField.classList.toggle('text-danger', value);
         break;
-      case 'status.message':
+      case 'feedback.message':
         messageField.textContent = i18n.t(`message.${value}`);
         break;
       case 'content.feeds':
-        renderFeeds(value);
+        renderFeeds(value, feedsContainer);
         break;
       case 'content.posts':
-        renderPosts(value);
+        renderPosts(value, postContainer);
         break;
       case 'content.touched':
-        renderPosts(state.content.posts);
+        renderPosts(state.content.posts, postContainer);
         break;
       case 'modal.touchedID':
-        renderModal(value);
+        renderModal(state.content.posts.filter(({ id }) => id === value), modal);
         break;
       default:
         break;
