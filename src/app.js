@@ -14,6 +14,17 @@ const getRequests = (url) => axios.get('https://allorigins.hexlet.app/get', {
   },
 });
 
+const getErrorMessage = (error) => {
+  if (error.isParseError) {
+    console.error(error.data);
+    return 'validRSS';
+  }
+  if (error.code === 'ERR_NETWORK') {
+    return 'network';
+  }
+  return error.message;
+};
+
 const validateURL = (url, validaded) => {
   const schema = yup.string().trim()
     .required()
@@ -35,7 +46,6 @@ const updateAllRSS = (currentState) => {
         .map((post) => ({ ...post, feedID: id, id: _.uniqueId() }));
       return newPosts;
     }));
-  const { feedback } = currentState;
   Promise.all(promises)
     .then((contents) => {
       const newPosts = contents.flat();
@@ -43,10 +53,7 @@ const updateAllRSS = (currentState) => {
         currentState.content.posts.push(...newPosts);
       }
     })
-    .catch(() => {
-      feedback.isError = true;
-      feedback.message = 'network';
-    })
+    .catch((error) => console.error(error))
     .finally(() => {
       setTimeout(() => updateAllRSS(currentState), 5000);
     });
@@ -92,34 +99,32 @@ const app = (i18Instance) => {
     const newUrl = formData.get('url');
     watchedState.form.status = 'idle';
     validateURL(newUrl, watchedState.form.links)
-      .catch((e) => {
+      .catch((error) => {
         watchedState.form.valid = false;
-        throw new Error(e.message);
+        throw error;
       })
       .then((url) => {
         watchedState.form.valid = true;
         watchedState.form.status = 'loading';
-        return getRequests(url)
-          .catch(() => {
-            throw new Error('network');
-          });
+        return getRequests(url);
       })
       .then((response) => {
         const { contents } = response.data;
         const { feed, posts } = parseDocument(contents);
-        const feedID = _.uniqueId();
-        watchedState.content.feeds.push({ ...feed, id: feedID, link: newUrl });
-        const idBindedPosts = posts.map((post) => ({ ...post, feedID, id: _.uniqueId() }));
+        feed.id = _.uniqueId();
+        feed.link = newUrl;
+        watchedState.content.feeds.push(feed);
+        const idBindedPosts = posts.map((post) => ({ ...post, feedID: feed.id, id: _.uniqueId() }));
         watchedState.content.posts.push(...idBindedPosts);
         watchedState.form.links.push(newUrl);
         watchedState.form.status = 'done';
         watchedState.feedback.isError = false;
         watchedState.feedback.message = 'done';
       })
-      .catch((e) => {
+      .catch((error) => {
         watchedState.form.status = 'error';
         watchedState.feedback.isError = true;
-        watchedState.feedback.message = e.message;
+        watchedState.feedback.message = getErrorMessage(error);
       });
   });
 

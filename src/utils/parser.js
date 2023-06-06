@@ -3,8 +3,10 @@ export default (contents) => {
   const document = parser.parseFromString(contents, 'text/xml');
   const parseError = document.querySelector('parsererror > div');
   if (parseError) {
-    console.log(parseError.textContent);
-    throw new Error('validRSS');
+    const error = new Error(parseError.textContent);
+    error.isParseError = true;
+    error.data = parseError.textContent;
+    throw error;
   }
   const feed = {
     title: document.querySelector('channel > title').textContent,
