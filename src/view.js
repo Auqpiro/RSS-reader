@@ -37,23 +37,6 @@ export default (elements, i18n, state) => {
     return itemContainer;
   };
 
-  const renderPosts = (posts, container) => {
-    const divContainer = document.createElement('div');
-    divContainer.classList.add('card', 'border-0');
-    const divHeader = document.createElement('div');
-    divHeader.classList.add('card-body');
-    const header = document.createElement('h2');
-    header.classList.add('card-title', 'h4');
-    header.textContent = i18n.t('interface.posts');
-    divHeader.append(header);
-    divContainer.append(divHeader);
-    const postList = document.createElement('ul');
-    postList.classList.add('list-group', 'border-0', 'rounded-0');
-    posts.forEach((post) => postList.prepend(renderPost(post)));
-    divContainer.append(postList);
-    container.replaceChildren(divContainer);
-  };
-
   const renderFeed = (feed) => {
     const { title, description } = feed;
     const itemContainer = document.createElement('li');
@@ -68,20 +51,25 @@ export default (elements, i18n, state) => {
     return itemContainer;
   };
 
-  const renderFeeds = (feeds, container) => {
+  const renderContainer = (label, content, container) => {
     const divContainer = document.createElement('div');
     divContainer.classList.add('card', 'border-0');
     const divHeader = document.createElement('div');
     divHeader.classList.add('card-body');
     const header = document.createElement('h2');
     header.classList.add('card-title', 'h4');
-    header.textContent = i18n.t('interface.feeds');
+    header.textContent = i18n.t(`interface.${label}`);
     divHeader.append(header);
     divContainer.append(divHeader);
-    const feedList = document.createElement('ul');
-    feedList.classList.add('list-group', 'border-0', 'rounded-0');
-    feeds.forEach((feed) => feedList.append(renderFeed(feed)));
-    divContainer.append(feedList);
+    const contentList = document.createElement('ul');
+    contentList.classList.add('list-group', 'border-0', 'rounded-0');
+    content.forEach((item) => {
+      const listItem = (label === 'posts')
+        ? renderPost(item)
+        : renderFeed(item);
+      contentList.prepend(listItem);
+    });
+    divContainer.append(contentList);
     container.replaceChildren(divContainer);
   };
 
@@ -136,13 +124,13 @@ export default (elements, i18n, state) => {
         messageField.textContent = i18n.t(`message.${value}`);
         break;
       case 'content.feeds':
-        renderFeeds(value, feedsContainer);
+        renderContainer('feeds', value, feedsContainer);
         break;
       case 'content.posts':
-        renderPosts(value, postContainer);
+        renderContainer('posts', value, postContainer);
         break;
       case 'UIstate.touched':
-        renderPosts(state.content.posts, postContainer);
+        renderContainer('posts', state.content.posts, postContainer);
         break;
       case 'UIstate.modalSelector':
         renderModal(state.content.posts.filter(({ id }) => id === value), modal);
