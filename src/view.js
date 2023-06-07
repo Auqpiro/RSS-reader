@@ -17,7 +17,7 @@ export default (elements, i18n, state) => {
     itemContainer.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
     const postLink = document.createElement('a');
     postLink.href = link;
-    if (state.content.touched.has(id)) {
+    if (state.UIstate.touched.has(id)) {
       postLink.classList.add('fw-normal', 'link-secondary');
     } else {
       postLink.classList.add('fw-bold');
@@ -29,9 +29,9 @@ export default (elements, i18n, state) => {
     const postButton = document.createElement('button');
     postButton.type = 'button';
     postButton.classList.add('btn', 'btn-outline-primary', 'btn-sm');
-    postButton.dataset.toggle = 'modal';
-    postButton.dataset.target = '#modal';
     postButton.dataset.id = id;
+    postButton.dataset.bsToggle = 'modal';
+    postButton.dataset.bsTarget = '#modal';
     postButton.textContent = i18n.t('interface.button');
     itemContainer.append(postLink, postButton);
     return itemContainer;
@@ -49,7 +49,7 @@ export default (elements, i18n, state) => {
     divContainer.append(divHeader);
     const postList = document.createElement('ul');
     postList.classList.add('list-group', 'border-0', 'rounded-0');
-    posts.forEach((post) => postList.prepend(renderPost(post, state, i18n)));
+    posts.forEach((post) => postList.prepend(renderPost(post)));
     divContainer.append(postList);
     container.replaceChildren(divContainer);
   };
@@ -95,20 +95,24 @@ export default (elements, i18n, state) => {
     modalLink.href = link;
   };
 
-  const handleFormStatus = (value) => {
+  const handleStatus = (value) => {
     switch (value) {
       case 'idle':
         messageField.textContent = '';
         break;
       case 'loading':
+        input.disabled = true;
         submit.disabled = true;
         break;
       case 'done':
+        input.disabled = false;
         form.reset();
         input.focus();
         submit.disabled = false;
+        messageField.textContent = i18n.t('message.done');
         break;
       case 'error':
+        input.disabled = false;
         submit.disabled = false;
         break;
       default:
@@ -121,14 +125,14 @@ export default (elements, i18n, state) => {
       case 'form.valid':
         input.classList.toggle('is-invalid', !value);
         break;
-      case 'form.status':
-        handleFormStatus(value);
+      case 'process.status':
+        handleStatus(value);
         break;
-      case 'feedback.isError':
+      case 'process.isError':
         messageField.classList.toggle('text-success', !value);
         messageField.classList.toggle('text-danger', value);
         break;
-      case 'feedback.message':
+      case 'process.message':
         messageField.textContent = i18n.t(`message.${value}`);
         break;
       case 'content.feeds':
@@ -137,10 +141,10 @@ export default (elements, i18n, state) => {
       case 'content.posts':
         renderPosts(value, postContainer);
         break;
-      case 'content.touched':
+      case 'UIstate.touched':
         renderPosts(state.content.posts, postContainer);
         break;
-      case 'modal.touchedID':
+      case 'UIstate.modalSelector':
         renderModal(state.content.posts.filter(({ id }) => id === value), modal);
         break;
       default:

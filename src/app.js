@@ -1,7 +1,6 @@
 import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
-import * as bootstrap from 'bootstrap';
 import _ from 'lodash';
 import resources from './locales/index.js';
 import watch from './view.js';
@@ -14,7 +13,7 @@ const getRequests = (url) => axios.get('https://allorigins.hexlet.app/get', {
   },
 });
 
-const getErrorMessage = (error) => {
+const getErrorMessageKey = (error) => {
   if (error.isParseError) {
     console.error(error.data);
     return 'validRSS';
@@ -34,21 +33,21 @@ const validateURL = (url, validaded) => {
 };
 
 const updateAllRSS = (currentState) => {
-  if (currentState.form.links.length === 0) {
+  if (currentState.content.feeds.length === 0) {
     setTimeout(() => updateAllRSS(currentState), 5000);
     return;
   }
   const promises = currentState.content.feeds.map(({ id, link }) => getRequests(link)
     .then((response) => {
       const { posts } = parseDocument(response.data.contents);
-      const oldPosts = currentState.content.posts;
-      const newPosts = _.differenceBy(posts, oldPosts, 'title')
+      const newPosts = _.differenceBy(posts, currentState.content.posts, 'title')
         .map((post) => ({ ...post, feedID: id, id: _.uniqueId() }));
       return newPosts;
-    }));
+    })
+    .catch((error) => console.error(error)));
   Promise.all(promises)
-    .then((contents) => {
-      const newPosts = contents.flat();
+    .then((data) => {
+      const newPosts = data.flat().filter((content) => content);
       if (newPosts.length !== 0) {
         currentState.content.posts.push(...newPosts);
       }
@@ -72,22 +71,21 @@ const app = (i18Instance) => {
 
   const state = {
     form: {
+      valid: null,
+    },
+    process: {
       // idle, loading, done, error
       status: 'idle',
-      valid: null,
-      links: [],
-    },
-    feedback: {
       isError: null,
       message: null,
     },
     content: {
       feeds: [],
       posts: [],
-      touched: new Set(),
     },
-    modal: {
-      touchedID: null,
+    UIstate: {
+      touched: new Set(),
+      modalSelector: null,
     },
   };
 
@@ -97,46 +95,41 @@ const app = (i18Instance) => {
     event.preventDefault();
     const formData = new FormData(event.target);
     const newUrl = formData.get('url');
-    watchedState.form.status = 'idle';
-    validateURL(newUrl, watchedState.form.links)
+    watchedState.process.status = 'idle';
+    const passedFeedLinks = watchedState.content.feeds.map(({ link }) => link);
+    validateURL(newUrl, passedFeedLinks)
       .catch((error) => {
         watchedState.form.valid = false;
         throw error;
       })
       .then((url) => {
         watchedState.form.valid = true;
-        watchedState.form.status = 'loading';
+        watchedState.process.status = 'loading';
         return getRequests(url);
       })
       .then((response) => {
-        const { contents } = response.data;
-        const { feed, posts } = parseDocument(contents);
+        const { feed, posts } = parseDocument(response.data.contents);
         feed.id = _.uniqueId();
         feed.link = newUrl;
         watchedState.content.feeds.push(feed);
         const idBindedPosts = posts.map((post) => ({ ...post, feedID: feed.id, id: _.uniqueId() }));
         watchedState.content.posts.push(...idBindedPosts);
-        watchedState.form.links.push(newUrl);
-        watchedState.form.status = 'done';
-        watchedState.feedback.isError = false;
-        watchedState.feedback.message = 'done';
+        watchedState.process.status = 'done';
+        watchedState.process.isError = false;
       })
       .catch((error) => {
-        watchedState.form.status = 'error';
-        watchedState.feedback.isError = true;
-        watchedState.feedback.message = getErrorMessage(error);
+        watchedState.process.status = 'error';
+        watchedState.process.isError = true;
+        watchedState.process.message = `error.${getErrorMessageKey(error)}`;
       });
   });
-
-  const myModal = new bootstrap.Modal(elements.modal);
 
   elements.postContainer.addEventListener('click', ({ target }) => {
     const touchedPostID = target.dataset.id;
     if (touchedPostID) {
-      watchedState.content.touched.add(touchedPostID);
+      watchedState.UIstate.touched.add(touchedPostID);
       if (target.tagName === 'BUTTON') {
-        watchedState.modal.touchedID = touchedPostID;
-        myModal.show();
+        watchedState.UIstate.modalSelector = touchedPostID;
       }
     }
   });
