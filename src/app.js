@@ -6,12 +6,12 @@ import resources from './locales/index.js';
 import watch from './view.js';
 import parseDocument from './utils/parser.js';
 
-const getRequests = (url) => axios.get('https://allorigins.hexlet.app/get', {
-  params: {
-    disableCache: true,
-    url,
-  },
-});
+const getProxyURL = (url) => {
+  const proxyUrl = new URL('/get', 'https://allorigins.hexlet.app');
+  proxyUrl.searchParams.set('url', url);
+  proxyUrl.searchParams.set('disableCache', 'true');
+  return proxyUrl.toString();
+};
 
 const getErrorMessageKey = (error) => {
   if (error.isParseError) {
@@ -33,11 +33,7 @@ const validateURL = (url, validaded) => {
 };
 
 const updateAllRSS = (currentState) => {
-  if (currentState.content.feeds.length === 0) {
-    setTimeout(() => updateAllRSS(currentState), 5000);
-    return;
-  }
-  const promises = currentState.content.feeds.map(({ id, link }) => getRequests(link)
+  const promises = currentState.content.feeds.map(({ id, link }) => axios.get(getProxyURL(link))
     .then((response) => {
       const { posts } = parseDocument(response.data.contents);
       const newPosts = _.differenceBy(posts, currentState.content.posts, 'title')
@@ -74,7 +70,7 @@ const app = (i18Instance) => {
       valid: null,
     },
     process: {
-      // idle, loading, done, error
+      // validate, send, done, error
       status: 'idle',
       isError: null,
       message: null,
@@ -95,17 +91,20 @@ const app = (i18Instance) => {
     event.preventDefault();
     const formData = new FormData(event.target);
     const newUrl = formData.get('url');
-    watchedState.process.status = 'idle';
+    watchedState.process.status = 'validate';
     const passedFeedLinks = watchedState.content.feeds.map(({ link }) => link);
     validateURL(newUrl, passedFeedLinks)
+      .then((url) => {
+        watchedState.form.valid = true;
+        return url;
+      })
       .catch((error) => {
         watchedState.form.valid = false;
         throw error;
       })
       .then((url) => {
-        watchedState.form.valid = true;
-        watchedState.process.status = 'loading';
-        return getRequests(url);
+        watchedState.process.status = 'send';
+        return axios.get(getProxyURL(url));
       })
       .then((response) => {
         const { feed, posts } = parseDocument(response.data.contents);

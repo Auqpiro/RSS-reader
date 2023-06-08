@@ -85,10 +85,10 @@ export default (elements, i18n, state) => {
 
   const handleStatus = (value) => {
     switch (value) {
-      case 'idle':
+      case 'validate':
         messageField.textContent = '';
         break;
-      case 'loading':
+      case 'send':
         input.disabled = true;
         submit.disabled = true;
         break;
