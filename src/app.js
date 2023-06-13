@@ -38,17 +38,12 @@ const updateAllRSS = (currentState) => {
       const { posts } = parseDocument(response.data.contents);
       const newPosts = _.differenceBy(posts, currentState.content.posts, 'title')
         .map((post) => ({ ...post, feedID: id, id: _.uniqueId() }));
-      return newPosts;
-    })
-    .catch((error) => console.error(error)));
-  Promise.all(promises)
-    .then((data) => {
-      const newPosts = data.flat().filter((content) => content);
       if (newPosts.length !== 0) {
         currentState.content.posts.push(...newPosts);
       }
     })
-    .catch((error) => console.error(error))
+    .catch((error) => console.error(error)));
+  Promise.all(promises)
     .finally(() => {
       setTimeout(() => updateAllRSS(currentState), 5000);
     });
@@ -136,7 +131,7 @@ const app = (i18Instance) => {
   setTimeout(() => updateAllRSS(watchedState), 5000);
 };
 
-export default async () => {
+export default () => {
   const defaultLang = 'ru';
   const i18Instance = i18next.createInstance();
   i18Instance.init({
